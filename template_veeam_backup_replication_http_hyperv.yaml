@@ -5,7 +5,7 @@ zabbix_export:
       name: Templates/Applications
   templates:
     - uuid: f347964463d24a16b8a8bfa445d3099d
-      template: 'Veeam Backup and Replication by HTTP (Hyper-V enhanced)'
+      template: 'Veeam Backup and Replication by HTTP HyperV enhanced'
       name: 'Veeam Backup and Replication by HTTP (Hyper-V enhanced)'
       description: |
         This template is designed to monitor Veeam Backup and Replication.
@@ -48,7 +48,7 @@ zabbix_export:
               value: status
           triggers:
             - uuid: 1aa3c9613fe34efeb38c87c1ed152a49
-              expression: 'length(last(/Veeam Backup and Replication by HTTP (Hyper-V enhanced)/veeam.get.errors))>0'
+              expression: 'length(last(/Veeam Backup and Replication by HTTP HyperV enhanced/veeam.get.errors))>0'
               name: 'Veeam Backup: There are errors in requests to API'
               opdata: '{ITEM.LASTVALUE1}'
               priority: AVERAGE
@@ -345,7 +345,7 @@ zabbix_export:
                   value: '{#WORKLOAD}'
               trigger_prototypes:
                 - uuid: 72756af6d2cd45f384aad899d281c244
-                  expression: 'find(/Veeam Backup and Replication by HTTP (Hyper-V enhanced)/veeam.jobs.last.result[{#ID}],,"like","Failed")=1'
+                  expression: 'find(/Veeam Backup and Replication by HTTP HyperV enhanced/veeam.jobs.last.result[{#ID}],,"like","Failed")=1'
                   name: 'Veeam Backup: Last result job failed'
                   event_name: 'Veeam Backup: Failed job [{#NAME}]'
                   priority: AVERAGE
@@ -738,7 +738,7 @@ zabbix_export:
                   value: '{#NAME}'
               trigger_prototypes:
                 - uuid: 5bb003a91a0c4dcdadf542056513e133
-                  expression: 'find(/Veeam Backup and Replication by HTTP (Hyper-V enhanced)/veeam.sessions.result[{#ID}],,"like","Failed")=1'
+                  expression: 'find(/Veeam Backup and Replication by HTTP HyperV enhanced/veeam.sessions.result[{#ID}],,"like","Failed")=1'
                   name: 'Veeam Backup: Last result session failed'
                   event_name: 'Veeam Backup: Failed session [{#NAME}]'
                   priority: AVERAGE
