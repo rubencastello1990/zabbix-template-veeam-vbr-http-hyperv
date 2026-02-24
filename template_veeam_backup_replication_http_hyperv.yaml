@@ -4,7 +4,7 @@ zabbix_export:
     - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
       name: Templates/Applications
   templates:
-    - uuid: 0b806f6a30535c91b9cf74d5f7625b42
+    - uuid: 499cb508c25f4b46867f1bc67a328c8e
       template: 'Veeam Backup and Replication by HTTP (Hyper-V enhanced)'
       name: 'Veeam Backup and Replication by HTTP (Hyper-V enhanced)'
       description: |
@@ -27,7 +27,7 @@ zabbix_export:
       groups:
         - name: Templates/Applications
       items:
-        - uuid: 9df2e7ec45b95e18abb5e7ec08c5f9da
+        - uuid: 9a2bfc41a23b445ebf7da791be23b65a
           name: 'Get errors'
           type: DEPENDENT
           key: veeam.get.errors
@@ -47,7 +47,7 @@ zabbix_export:
             - tag: component
               value: status
           triggers:
-            - uuid: 6919187e8f145f8b85520fe7eef19344
+            - uuid: 65840c99c3484de394e0ad42048f00e8
               expression: 'length(last(/Veeam Backup and Replication by HTTP (Hyper-V enhanced)/veeam.get.errors))>0'
               name: 'Veeam Backup: There are errors in requests to API'
               opdata: '{ITEM.LASTVALUE1}'
@@ -56,7 +56,7 @@ zabbix_export:
               tags:
                 - tag: scope
                   value: availability
-        - uuid: 0d77d79737515cc5b69220bf07522cb8
+        - uuid: 8434f93a0213474d95101721ab04833f
           name: 'Get metrics'
           type: SCRIPT
           key: veeam.get.metrics
@@ -300,7 +300,7 @@ zabbix_export:
             - tag: component
               value: raw
       discovery_rules:
-        - uuid: 8f26443c0bd45cfdbe6f1db9c8b5064e
+        - uuid: ab993eafc9314123a0a1af18afb6f507
           name: 'Jobs states discovery'
           type: DEPENDENT
           key: veeam.job.state.discovery
@@ -324,7 +324,7 @@ zabbix_export:
                 operator: NOT_MATCHES_REGEX
           description: 'Discovery of the jobs states.'
           item_prototypes:
-            - uuid: a3644abf82b45bb98b8429c5377b8b2c
+            - uuid: 4e0ff4f60ec64a00a275bfdc3c6b46c7
               name: 'Job states [{#NAME}] [{#TYPE}]: Last result'
               type: DEPENDENT
               key: 'veeam.jobs.last.result[{#ID}]'
@@ -344,7 +344,7 @@ zabbix_export:
                 - tag: workload
                   value: '{#WORKLOAD}'
               trigger_prototypes:
-                - uuid: 9db0384f27775b9c98bc3e62f345eb76
+                - uuid: 65cbadb513dd4f27a2d32ba1a8b32a49
                   expression: 'find(/Veeam Backup and Replication by HTTP (Hyper-V enhanced)/veeam.jobs.last.result[{#ID}],,"like","Failed")=1'
                   name: 'Veeam Backup: Last result job failed'
                   event_name: 'Veeam Backup: Failed job [{#NAME}]'
@@ -353,7 +353,7 @@ zabbix_export:
                   tags:
                     - tag: scope
                       value: availability
-            - uuid: 1e7bc7a654665e63bd9b7b8505e89dfd
+            - uuid: 6a895bbe2a7e405cbc56dff09997f0ef
               name: 'Job states [{#NAME}] [{#TYPE}]: Get data'
               type: DEPENDENT
               key: 'veeam.jobs.states.raw[{#ID}]'
@@ -371,7 +371,7 @@ zabbix_export:
                   value: jobs
                 - tag: component
                   value: raw
-            - uuid: f90297e6bd7e56ff9399f037568bf982
+            - uuid: f65c702b0e454fe695d30fb0d711ae1b
               name: 'Job states [{#NAME}] [{#TYPE}]: Status'
               type: DEPENDENT
               key: 'veeam.jobs.status[{#ID}]'
@@ -412,7 +412,7 @@ zabbix_export:
             - type: DISCARD_UNCHANGED_HEARTBEAT
               parameters:
                 - 6h
-        - uuid: 86135768fc6f54c0a0776cc3ba9c5cd0
+        - uuid: 1f462835c78f407cbfa7ad2e7ba8c96c
           name: 'Proxies discovery'
           type: DEPENDENT
           key: veeam.proxies.discovery
@@ -431,7 +431,7 @@ zabbix_export:
                 operator: NOT_MATCHES_REGEX
           description: 'Discovery of proxies.'
           item_prototypes:
-            - uuid: f91662102c3559b1877b84b668ac3a9e
+            - uuid: 7e1d95ddcdd94c41830e8978bdafe6b2
               name: 'Proxy [{#NAME}] [{#TYPE}]: Max Task Count'
               type: DEPENDENT
               key: 'veeam.proxy.maxtask[{#NAME}]'
@@ -447,7 +447,7 @@ zabbix_export:
                   value: proxies
                 - tag: proxy
                   value: '{#NAME}'
-            - uuid: 7eb2320807145212ad27a78ee8badce4
+            - uuid: fabd8a7a98f94b29b127d29354b2709d
               name: 'Proxy [{#NAME}] [{#TYPE}]: Get data'
               type: DEPENDENT
               key: 'veeam.proxy.raw[{#NAME}]'
@@ -467,7 +467,7 @@ zabbix_export:
                   value: raw
                 - tag: proxy
                   value: '{#NAME}'
-            - uuid: 2d078b73f8275d67aa5dbea5de8fa0c7
+            - uuid: 318fdd92ff2f4a84a9fffea946949420
               name: 'Proxy [{#NAME}] [{#TYPE}]: Host name'
               type: DEPENDENT
               key: 'veeam.proxy.server.name[{#NAME}]'
@@ -484,7 +484,7 @@ zabbix_export:
                   value: proxies
                 - tag: proxy
                   value: '{#NAME}'
-            - uuid: 2ee6f8179e765736b34481d1da6dbb04
+            - uuid: c1322674f3274dd39148e4870ee07826
               name: 'Server [{#NAME}]: Get data'
               type: DEPENDENT
               key: 'veeam.proxy.server.raw[{#NAME}]'
@@ -504,7 +504,7 @@ zabbix_export:
                   value: raw
                 - tag: proxy
                   value: '{#NAME}'
-            - uuid: 2b3c8718a6cc57a9a0ccb2da02c1860f
+            - uuid: c1f42c85b9634c48b9e15ddf8c651cf7
               name: 'Proxy [{#NAME}] [{#TYPE}]: Host type'
               type: DEPENDENT
               key: 'veeam.proxy.server.type[{#NAME}]'
@@ -541,7 +541,7 @@ zabbix_export:
             - type: DISCARD_UNCHANGED_HEARTBEAT
               parameters:
                 - 6h
-        - uuid: 6182bdaad4dc56ff9a107316815429e5
+        - uuid: 5954590bd88e45c0af8a8eea3b13c682
           name: 'Repositories discovery'
           type: DEPENDENT
           key: veeam.repositories.discovery
@@ -560,7 +560,7 @@ zabbix_export:
                 operator: NOT_MATCHES_REGEX
           description: 'Discovery of repositories.'
           item_prototypes:
-            - uuid: 86ca5bda6d3e5809beeee4a40aa223e1
+            - uuid: e5d1465220874b2b9d60c39f70450755
               name: 'Repository [{#NAME}] [{#TYPE}]: Get data'
               type: DEPENDENT
               key: 'veeam.repositories.raw[{#NAME}]'
@@ -580,7 +580,7 @@ zabbix_export:
                   value: repositories
                 - tag: repository
                   value: '{#NAME}'
-            - uuid: 8482a4045e71515cacacc99b4f2580a8
+            - uuid: 6735f04c75fb48f3a0255064f3f06755
               name: 'Repository [{#NAME}] [{#TYPE}]: Used space [{#PATH}]'
               type: DEPENDENT
               key: 'veeam.repository.capacity[{#NAME}]'
@@ -598,7 +598,7 @@ zabbix_export:
                   value: repositories
                 - tag: repository
                   value: '{#NAME}'
-            - uuid: 08ed7149fe9757ab87d01a531ce07592
+            - uuid: 4b864febeab44619b204a7c03f010c89
               name: 'Repository [{#NAME}] [{#TYPE}]: Free space [{#PATH}]'
               type: DEPENDENT
               key: 'veeam.repository.free.space[{#NAME}]'
@@ -640,7 +640,7 @@ zabbix_export:
             - type: DISCARD_UNCHANGED_HEARTBEAT
               parameters:
                 - 6h
-        - uuid: 1b24055bc3015a67b19ac53fc0713d4e
+        - uuid: 0d67ae7701e146b6979b1e6c243f9547
           name: 'Sessions discovery'
           type: DEPENDENT
           key: veeam.sessions.discovery
@@ -659,7 +659,7 @@ zabbix_export:
                 operator: NOT_MATCHES_REGEX
           description: 'Discovery of sessions.'
           item_prototypes:
-            - uuid: a66f96c767f75bcbb33012214994c699
+            - uuid: 1fb454e010274009816020a438795be3
               name: 'Session [{#NAME}] [{#TYPE}]: Message'
               type: DEPENDENT
               key: 'veeam.sessions.message[{#ID}]'
@@ -678,7 +678,7 @@ zabbix_export:
                   value: '{#CREATION.TIME}'
                 - tag: session
                   value: '{#NAME}'
-            - uuid: 4e974cd7afa95023afb81e24fb8c6add
+            - uuid: 81a877b4b93d41338795ee3727a307da
               name: 'Session progress percent [{#NAME}] [{#TYPE}]'
               type: DEPENDENT
               key: 'veeam.sessions.progress.percent[{#ID}]'
@@ -698,7 +698,7 @@ zabbix_export:
                   value: '{#CREATION.TIME}'
                 - tag: session
                   value: '{#NAME}'
-            - uuid: 4ae3ac48e19b5b43b746d72c9780ca5e
+            - uuid: bbba185f6d2747a588f215c8b23fa46b
               name: 'Session [{#NAME}] [{#TYPE}]: Get data'
               type: DEPENDENT
               key: 'veeam.sessions.raw[{#ID}]'
@@ -717,7 +717,7 @@ zabbix_export:
                   value: raw
                 - tag: session
                   value: '{#NAME}'
-            - uuid: 2d0441f503835564b5c9ba88e64e5946
+            - uuid: 7c544b4b23cf4c7f98ca652ac3a86b12
               name: 'Session [{#NAME}] [{#TYPE}]: Result'
               type: DEPENDENT
               key: 'veeam.sessions.result[{#ID}]'
@@ -737,7 +737,7 @@ zabbix_export:
                 - tag: session
                   value: '{#NAME}'
               trigger_prototypes:
-                - uuid: a2b13288ccbb592c9b5dee5a941a8992
+                - uuid: 2ef150e461c543fa9770e8563ec04fc8
                   expression: 'find(/Veeam Backup and Replication by HTTP (Hyper-V enhanced)/veeam.sessions.result[{#ID}],,"like","Failed")=1'
                   name: 'Veeam Backup: Last result session failed'
                   event_name: 'Veeam Backup: Failed session [{#NAME}]'
@@ -746,7 +746,7 @@ zabbix_export:
                   tags:
                     - tag: scope
                       value: availability
-            - uuid: 8f45516a6e6252bc97725a8ca6e8a196
+            - uuid: 6993e75f18fe4aa4b8a7e5727b63c9b0
               name: 'Session [{#NAME}] [{#TYPE}]: State'
               type: DEPENDENT
               key: 'veeam.sessions.state[{#ID}]'
