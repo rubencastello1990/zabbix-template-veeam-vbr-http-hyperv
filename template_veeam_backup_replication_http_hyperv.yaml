@@ -186,10 +186,14 @@ zabbix_export:
             		var primaryIds = {};
             		primaryJobs.forEach(function (j) { primaryIds[j.id] = true; });
             
-            		var jobsList = Veeam.requestSafe(Veeam.params.api_endpoint + 'api/v1/jobs');
+            		var jobsList = Veeam.requestSafe(Veeam.params.api_endpoint + 'api/v1/jobs?limit=500');
             		var jobsById = {};
             		if (jobsList && Array.isArray(jobsList.data)) {
             			Zabbix.log(4, '[ VEEAM ] api/v1/jobs returned ' + jobsList.data.length + ' job(s).');
+            			if (jobsList.data.length > 0) {
+            				Zabbix.log(4, '[ VEEAM ] api/v1/jobs Job[0] keys: ' + Object.keys(jobsList.data[0]).join(', '));
+            				Zabbix.log(4, '[ VEEAM ] api/v1/jobs Job[0]: ' + JSON.stringify(jobsList.data[0]).substring(0, 600));
+            			}
             			jobsList.data.forEach(function (j) { if (j.id) jobsById[j.id] = j; });
             		} else {
             			Zabbix.log(4, '[ VEEAM ] api/v1/jobs returned no data.');
@@ -197,9 +201,17 @@ zabbix_export:
             
             		var sessionsData = (data.sessions && Array.isArray(data.sessions.data))
             			? data.sessions.data : [];
+            		// DEBUG: log structure of first session object
+            		if (sessionsData.length > 0) {
+            			Zabbix.log(4, '[ VEEAM ] Session[0] keys: ' + Object.keys(sessionsData[0]).join(', '));
+            			Zabbix.log(4, '[ VEEAM ] Session[0] sample: ' + JSON.stringify(sessionsData[0]).substring(0, 600));
+            		}
             		var sessionsByJob = {};
             		sessionsData.forEach(function (s) {
-            			var jId = s.jobId || s.parentId;
+            			var jId = s.jobId
+            				|| s.parentId
+            				|| (s.jobReference && s.jobReference.id)
+            				|| (s.jobInfo && s.jobInfo.id);
             			if (!jId) return;
             			if (!sessionsByJob[jId]) sessionsByJob[jId] = [];
             			sessionsByJob[jId].push(s);
@@ -241,10 +253,13 @@ zabbix_export:
             			}
             
             			var jobName = (jobMeta && jobMeta.name)
-            				|| (latest && (latest.jobName || latest.name)) || 'Unknown';
-            			var workload = (jobMeta && (jobMeta.workload || jobMeta.platform)) || 'HyperV';
+            				|| (latest && (latest.jobName || latest.name || latest.jobSourceName)) || 'Unknown';
+            			var workload = (jobMeta && (jobMeta.workload || jobMeta.platform || jobMeta.type))
+            				|| (latest && (latest.jobType || latest.sessionType || latest.workload))
+            				|| 'HyperV';
             			var jobType = (jobMeta && (jobMeta.type || jobMeta.jobType))
-            				|| (latest && latest.sessionType) || 'BackupJob';
+            				|| (latest && (latest.sessionType || latest.type))
+            				|| 'BackupJob';
             			var repoName = (jobMeta && jobMeta.storage &&
             				(jobMeta.storage.backupRepositoryName || jobMeta.storage.backupRepositoryId)) || '';
             
