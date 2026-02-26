@@ -175,111 +175,92 @@ zabbix_export:
             			data[key] = Veeam.request(Veeam.params.api_endpoint + endpoints[key]);
             		});
             
-            		// === Hyper-V enhancement: merge jobs missing from api/v1/jobs/states ===
-            		// api/v1/jobs/states only returns VMware vSphere jobs in many VBR versions.
-            		// We fetch api/v1/jobs (includes Hyper-V in VBR 12.1+) and derive
-            		// state/lastResult from sessions already collected above (no extra HTTP call).
+            		// === Hyper-V fallback: add jobs missing from api/v1/jobs/states ===
+            		// api/v1/jobs/states only exposes VMware jobs in many VBR versions.
+            		// SessionModel (per VBR REST spec) has: id, name(*), sessionType(*), state(*),
+            		// result{result, message}, creationTime(*).  Fields jobId/jobName do NOT exist.
+            		// Strategy: group sessions by session.name (= job name per spec), skip names
+            		// already covered by api/v1/jobs/states, synthesise one job entry per group.
+            		// (*) = required field — always present.
+
             		var primaryJobs = (data.jobs_states && Array.isArray(data.jobs_states.data))
             			? data.jobs_states.data : [];
             		Zabbix.log(4, '[ VEEAM ] api/v1/jobs/states returned ' + primaryJobs.length + ' job(s).');
-            
-            		var primaryIds = {};
-            		primaryJobs.forEach(function (j) { primaryIds[j.id] = true; });
-            
-            		var jobsList = Veeam.requestSafe(Veeam.params.api_endpoint + 'api/v1/jobs?limit=500');
-            		var jobsById = {};
-            		if (jobsList && Array.isArray(jobsList.data)) {
-            			Zabbix.log(4, '[ VEEAM ] api/v1/jobs returned ' + jobsList.data.length + ' job(s).');
-            			if (jobsList.data.length > 0) {
-            				Zabbix.log(4, '[ VEEAM ] api/v1/jobs Job[0] keys: ' + Object.keys(jobsList.data[0]).join(', '));
-            				Zabbix.log(4, '[ VEEAM ] api/v1/jobs Job[0]: ' + JSON.stringify(jobsList.data[0]).substring(0, 600));
-            			}
-            			jobsList.data.forEach(function (j) { if (j.id) jobsById[j.id] = j; });
-            		} else {
-            			Zabbix.log(4, '[ VEEAM ] api/v1/jobs returned no data.');
-            		}
-            
+
+            		// Log first session for debugging (only when sessions exist)
             		var sessionsData = (data.sessions && Array.isArray(data.sessions.data))
             			? data.sessions.data : [];
-            		// DEBUG: log structure of first session object
             		if (sessionsData.length > 0) {
             			Zabbix.log(4, '[ VEEAM ] Session[0] keys: ' + Object.keys(sessionsData[0]).join(', '));
-            			Zabbix.log(4, '[ VEEAM ] Session[0] sample: ' + JSON.stringify(sessionsData[0]).substring(0, 600));
+            			Zabbix.log(4, '[ VEEAM ] Session[0] sample: ' + JSON.stringify(sessionsData[0]).substring(0, 500));
             		}
-            		var sessionsByJob = {};
+
+            		// Build set of job names already covered by api/v1/jobs/states (dedup by name)
+            		var primaryNames = {};
+            		primaryJobs.forEach(function (j) { if (j.name) primaryNames[j.name] = true; });
+
+            		// Group sessions by name, keeping only backup-type sessions (sessionType='Job').
+            		// Sessions with unknown/absent sessionType are included as a safe fallback.
+            		var nonBackupTypes = {
+            			'Infrastructure': 1, 'ConfigurationBackup': 1, 'RepositoryMaintenance': 1,
+            			'RepositoryEvacuate': 1, 'InfrastructureItemDeletion': 1,
+            			'RestoreVm': 1, 'InstantRecovery': 1, 'FirstClassDiskInstantRestore': 1,
+            			'AzureApplianceDeploy': 1, 'QuickMigration': 1, 'Automation': 1
+            		};
+            		var sessionsByName = {};
             		sessionsData.forEach(function (s) {
-            			var jId = s.jobId
-            				|| s.parentId
-            				|| (s.jobReference && s.jobReference.id)
-            				|| (s.jobInfo && s.jobInfo.id);
-            			if (!jId) return;
-            			if (!sessionsByJob[jId]) sessionsByJob[jId] = [];
-            			sessionsByJob[jId].push(s);
+            			if (s.sessionType && nonBackupTypes[s.sessionType]) return;
+            			var sName = s.name;
+            			if (!sName) return;
+            			if (!sessionsByName[sName]) sessionsByName[sName] = [];
+            			sessionsByName[sName].push(s);
             		});
-            
-            		var candidateIds = {};
-            		Object.keys(jobsById).forEach(function (id) {
-            			if (!primaryIds[id]) candidateIds[id] = true;
-            		});
-            		Object.keys(sessionsByJob).forEach(function (id) {
-            			if (!primaryIds[id]) candidateIds[id] = true;
-            		});
-            
-            		var RUNNING_STATES = ['Starting', 'Working', 'Stopping', 'Pausing', 'Resuming', 'Postprocessing'];
+            		Zabbix.log(4, '[ VEEAM ] Unique job names found in sessions: ' + Object.keys(sessionsByName).length);
+
+            		var RUNNING_STATES = {'Starting': 1, 'Working': 1, 'Stopping': 1,
+            			'Pausing': 1, 'Resuming': 1, 'Postprocessing': 1, 'WaitingRepository': 1, 'WaitingSlot': 1};
             		var newJobs = [];
-            
-            		Object.keys(candidateIds).forEach(function (jId) {
-            			var jobMeta = jobsById[jId] || null;
-            			var jobSessions = sessionsByJob[jId] || [];
-            			jobSessions.sort(function (a, b) {
+
+            		Object.keys(sessionsByName).forEach(function (jobName) {
+            			// Skip jobs already reported by api/v1/jobs/states
+            			if (primaryNames[jobName]) return;
+
+            			var sessions = sessionsByName[jobName];
+            			// Sort descending by creationTime → sessions[0] is the most recent run
+            			sessions.sort(function (a, b) {
             				return new Date(b.creationTime || 0) - new Date(a.creationTime || 0);
             			});
-            			var latest = jobSessions[0] || null;
-            			if (!jobMeta && !latest) return;
-            
-            			var isActive = latest && RUNNING_STATES.indexOf(latest.state) !== -1;
-            			var isDisabled = jobMeta && (
-            				jobMeta.isDisabled === true ||
-            				(jobMeta.schedule && jobMeta.schedule.runAutomatically === false) ||
-            				jobMeta.isScheduleEnabled === false
-            			);
-            			var status = isActive ? 'running' : (isDisabled ? 'disabled' : 'inactive');
-            
+            			var latest = sessions[0];
+
+            			var isRunning = latest.state && RUNNING_STATES[latest.state];
+            			var status = isRunning ? 'running' : 'inactive';
+
+            			// result is SessionResultModel: { result: 'None|Success|Warning|Failed', message, isCanceled }
             			var lastResult = 'None';
-            			if (latest) {
-            				var r = latest.result;
-            				if (r && typeof r === 'object') lastResult = r.result || 'None';
-            				else if (typeof r === 'string') lastResult = r;
+            			var r = latest.result;
+            			if (r && typeof r === 'object') {
+            				lastResult = r.result || 'None';
+            			} else if (typeof r === 'string') {
+            				lastResult = r;
             			}
-            
-            			var jobName = (jobMeta && jobMeta.name)
-            				|| (latest && (latest.jobName || latest.name || latest.jobSourceName)) || 'Unknown';
-            			var workload = (jobMeta && (jobMeta.workload || jobMeta.platform || jobMeta.type))
-            				|| (latest && (latest.jobType || latest.sessionType || latest.workload))
-            				|| 'HyperV';
-            			var jobType = (jobMeta && (jobMeta.type || jobMeta.jobType))
-            				|| (latest && (latest.sessionType || latest.type))
-            				|| 'BackupJob';
-            			var repoName = (jobMeta && jobMeta.storage &&
-            				(jobMeta.storage.backupRepositoryName || jobMeta.storage.backupRepositoryId)) || '';
-            
+
             			newJobs.push({
-            				id: jId,
+            				id: 'hyperv:' + jobName,
             				name: jobName,
-            				type: jobType,
-            				workload: workload,
+            				type: 'Backup',
+            				workload: 'vm',
             				status: status,
             				lastResult: lastResult,
-            				repositoryName: repoName
+            				repositoryName: ''
             			});
             		});
-            
+
             		if (newJobs.length > 0) {
-            			Zabbix.log(4, '[ VEEAM ] Hyper-V fallback: added ' + newJobs.length + ' job(s) via api/v1/jobs + sessions.');
+            			Zabbix.log(4, '[ VEEAM ] Hyper-V fallback: added ' + newJobs.length + ' job(s) from sessions.');
             		} else {
-            			Zabbix.log(4, '[ VEEAM ] Hyper-V fallback: no additional jobs found (VMware-only or already complete).');
+            			Zabbix.log(4, '[ VEEAM ] Hyper-V fallback: no additional jobs found.');
             		}
-            
+
             		if (!data.jobs_states) { data.jobs_states = {data: []}; }
             		if (!Array.isArray(data.jobs_states.data)) { data.jobs_states.data = []; }
             		data.jobs_states.data = data.jobs_states.data.concat(newJobs);
